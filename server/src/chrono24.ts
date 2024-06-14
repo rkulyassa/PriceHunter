@@ -22,7 +22,8 @@ interface WatchData {
 type WatchValuation = [min: number, average: number, max: number];
 
 const SELECTORS = {
-    allowCookiesInput: 'body > dialog > div > div.gdpr-layer-footer.m-t-3 > button',
+    // allowCookiesInput: 'body > dialog > div > div.gdpr-layer-footer.m-t-3 > button',
+    allowCookiesDialog: 'body > dialog',
     productSearchField: '#productSearch',
     firstProductSearchResult: '#valuationForm > div.valuation-inputs.row.row-compressed.m-x-auto > div:nth-child(1) > div.form-group.form-group-lg.m-b-0 > div > ul > li:nth-child(1)',
     conditionDropdown: '#condition',
@@ -36,39 +37,9 @@ async function lookupChrono24(watchData: WatchData): Promise<WatchValuation> {
 
     // Magic here ✨
     await driver.get(CHRONO24_URL);
-    const allowCookiesInput = await driver.wait(Selenium.until.elementLocated(Selenium.By.css(SELECTORS.allowCookiesInput)));
-    console.log(await allowCookiesInput.getAttribute('outerHTML'));
+    await driver.wait(Selenium.until.elementLocated(Selenium.By.css(SELECTORS.allowCookiesDialog)));
+    await driver.executeScript(`document.querySelector('${SELECTORS.allowCookiesDialog}').style.visibility = 'hidden';`);
 
-    for (let i = 0; i < 100; i++) {
-        await driver.sleep(1000);
-        try {
-            allowCookiesInput.click();
-            console.log("Clicked");
-        } catch (e) {
-            console.error(e);
-        }
-    }
-
-    await allowCookiesInput.click();
-
-    // await driver.sleep(3).then(() => allowCookiesInput.click());
-    // await allowCookiesInput.click();
-    // await driver.executeScript('arguments[0].scrollIntoView(true);', element);
-    // await driver.sleep(5).then(() => allowCookiesInput.click());
-    // await driver.executeScript('arguments[0].click()', allowCookiesInput);
-    // const productSearchField: Selenium.WebElement = await driver.findElement(Selenium.By.css(SELECTORS.productSearchField));
-    // await productSearchField.sendKeys(watchData.reference);
-    // const firstProductSearchResult: Selenium.WebElement = await driver.findElement(Selenium.By.css(SELECTORS.firstProductSearchResult));
-    // await firstProductSearchResult.click();
-    // const conditionDropdown: Selenium.WebElement = await driver.findElement(Selenium.By.css(SELECTORS.conditionDropdown));
-    // const scopeOfDeliveryDropdown: Selenium.WebElement = await driver.findElement(Selenium.By.id(SELECTORS.scopeOfDeliveryDropdown));
-    // await conditionDropdown.click();
-    // console.log(await conditionDropdown.getText());
-    // await conditionDropdown.sendKeys('Unworn');
-    // const ss = await conditionDropdown.takeScreenshot();
-    // console.log(ss);
-    // await conditionDropdown.click();
-    // await driver.quit();
     return [0,1,2];
 }
 
