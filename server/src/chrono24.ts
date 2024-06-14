@@ -38,7 +38,10 @@ async function lookupChrono24(watchData: WatchData): Promise<WatchValuation> {
     // Magic here ✨
     await driver.get(CHRONO24_URL);
     await driver.wait(Selenium.until.elementLocated(Selenium.By.css(SELECTORS.allowCookiesDialog)));
-    await driver.executeScript(`document.querySelector('${SELECTORS.allowCookiesDialog}').style.visibility = 'hidden';`);
+    await driver.executeScript(`document.querySelector('${SELECTORS.allowCookiesDialog}').remove()`);
+
+    const productSearchField: Selenium.WebElement = await driver.findElement(Selenium.By.css(SELECTORS.productSearchField));
+    await productSearchField.sendKeys(watchData.reference);
 
     return [0,1,2];
 }
