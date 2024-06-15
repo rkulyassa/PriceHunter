@@ -1,8 +1,17 @@
 {
+  "name": "server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
   "dependencies": {
-    "@types/jsdom": "^21.1.7",
-    "@types/selenium-webdriver": "^4.1.23",
-    "express": "^4.19.2",
+    "axios": "^1.7.2",
+    "form-data": "^4.0.0",
     "jsdom": "^24.1.0",
     "selenium-webdriver": "^4.21.0",
     "typescript": "^5.4.5"
