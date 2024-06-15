@@ -27,7 +27,9 @@ const SELECTORS = {
     productSearchField: '#productSearch',
     firstProductSearchResult: '#valuationForm > div.valuation-inputs.row.row-compressed.m-x-auto > div:nth-child(1) > div.form-group.form-group-lg.m-b-0 > div > ul > li:nth-child(1)',
     conditionDropdown: '#condition',
-    scopeOfDeliveryDropdown: '#scopeOfDelivery'
+    scopeOfDeliveryDropdown: '#scopeOfDelivery',
+    calculateStatsButton: '#calculateStats',
+    valueRangeSpans: '#main-content > section.market-value.text-center.p-t-5 > div > div > div > div.value-range.justify-content-between.m-b-5.p-b-5.d-none.d-sm-flex > div > span'
 }
 
 async function lookupChrono24(watchData: WatchData): Promise<WatchValuation> {
@@ -43,7 +45,39 @@ async function lookupChrono24(watchData: WatchData): Promise<WatchValuation> {
     const productSearchField: Selenium.WebElement = await driver.findElement(Selenium.By.css(SELECTORS.productSearchField));
     await productSearchField.sendKeys(watchData.reference);
 
-    return [0,1,2];
+    await driver.wait(Selenium.until.elementLocated(Selenium.By.css(SELECTORS.firstProductSearchResult)))
+    const firstProductSearchResult: Selenium.WebElement = await driver.findElement(Selenium.By.css(SELECTORS.firstProductSearchResult));
+    await firstProductSearchResult.click();
+
+    const conditionSelectionIndex: number = watchData.condition === WatchCondition.PRE_OWNED ? 2 : 1
+    await driver.executeScript(`document.querySelector('${SELECTORS.conditionDropdown}').selectedIndex = ${conditionSelectionIndex}`);
+
+    let scopeOfDeliverySelectionIndex: number = 1;
+    if (watchData.withOriginalPackaging && watchData.withPapers) {
+        scopeOfDeliverySelectionIndex = 4;
+    } else if (watchData.withOriginalPackaging) {
+        scopeOfDeliverySelectionIndex = 2;
+    } else if (watchData.withPapers) {
+        scopeOfDeliverySelectionIndex = 3;
+    }
+    await driver.executeScript(`document.querySelector('${SELECTORS.scopeOfDeliveryDropdown}').selectedIndex = ${scopeOfDeliverySelectionIndex}`);
+
+    const calculateStatsButton: Selenium.WebElement = await driver.findElement(Selenium.By.css(SELECTORS.calculateStatsButton));
+    await calculateStatsButton.click();
+
+    await driver.wait(Selenium.until.elementLocated(Selenium.By.css(SELECTORS.allowCookiesDialog)));
+    await driver.executeScript(`document.querySelector('${SELECTORS.allowCookiesDialog}').remove()`);
+
+    const valueRangeSpans: Array<Selenium.WebElement> = await driver.findElements(Selenium.By.css(SELECTORS.valueRangeSpans));
+    const values: number[] = await Promise.all(
+        valueRangeSpans.map(async span => Number.parseInt((await span.getText()).slice(1)))
+    );
+    if (values.length !== 3) throw new Error("Expected exactly 3 values for WatchValuation");
+
+    await driver.quit();
+
+    return values as WatchValuation;
+    
 }
 
 const sampleData: WatchData = {
@@ -53,5 +87,6 @@ const sampleData: WatchData = {
     withOriginalPackaging: true,
     withPapers: true
 }
+// should give 142,146,150
 
 lookupChrono24(sampleData).then((valuation: WatchValuation) => console.log(valuation)).catch(console.error);
