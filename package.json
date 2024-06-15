@@ -1,6 +1,8 @@
 {
   "dependencies": {
+    "@types/jsdom": "^21.1.7",
     "@types/selenium-webdriver": "^4.1.23",
+    "jsdom": "^24.1.0",
     "selenium-webdriver": "^4.21.0",
     "typescript": "^5.4.5"
   }

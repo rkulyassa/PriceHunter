@@ -1,38 +1,163 @@
-import axios from 'axios';
-import FormData from 'form-data';
+import * as Selenium from 'selenium-webdriver';
+import * as chrome from 'selenium-webdriver/chrome';
+import { DriverService } from 'selenium-webdriver/remote';
+import { JSDOM } from 'jsdom';
 
-const url = 'https://api.example.com/data';
+const CHRONO24_URL = 'https://www.chrono24.com/info/valuation.htm';
 
-// Function to make the HTTP POST request
-async function postData() {
-    const formData = new FormData();
-    formData.append('model', "Seiko 5 Automatic Snxs77  Snxs77k Men's Watch");
-    formData.append('condition', "Unworn");
-    formData.append('scopeOfDelivery', "WithBoxAndPapers");
-    formData.append('templateProductId', 134179);
-    formData.append('dialColorId', 710);
-    formData.append('caseMaterialId', 4);
-    formData.append('searchInput', "SNXS77K1");
-
-    const config = {
-        headers: {...formData.getHeaders()}
-    };
-    console.log(config.headers);
-    const response = await axios.post('https://www.chrono24.com/info/valuation.htm', formData, config);
-
-    // const response = await axios.post('https://www.chrono24.com/info/valuation.htm', {
-    //     model: "Seiko 5 Automatic Snxs77  Snxs77k Men's Watch",
-    //     condition: "Unworn",
-    //     scopeOfDelivery: "WithBoxAndPapers",
-    //     templateProductId: 134179,
-    //     dialColorId: 710,
-    //     caseMaterialId: 4,
-    //     searchInput: "SNXS77K1",
-    // });
-
-    // Log the response data
-    // console.log('Response:', response.data);
+const enum WatchCondition {
+    NEW_WITH_TAGS,
+    NEW_WITHOUT_TAGS,
+    NEW_WITH_DEFECTS,
+    PRE_OWNED
 }
 
-// Call the function to post data
-postData();
+interface WatchData {
+    condition: WatchCondition;
+    price: number;
+    reference: string;
+    withOriginalPackaging: boolean;
+    withPapers: boolean;
+}
+
+type WatchValuation = [min: number, average: number, max: number];
+
+const SELECTORS = {
+    // allowCookiesInput: 'body > dialog > div > div.gdpr-layer-footer.m-t-3 > button',
+    allowCookiesDialog: 'body > dialog',
+    productSearchField: '#productSearch',
+    firstProductSearchResult: '#valuationForm > div.valuation-inputs.row.row-compressed.m-x-auto > div:nth-child(1) > div.form-group.form-group-lg.m-b-0 > div > ul > li:nth-child(1)',
+    conditionDropdown: '#condition',
+    scopeOfDeliveryDropdown: '#scopeOfDelivery',
+    calculateStatsButton: '#calculateStats',
+    valueRangeSpans: '#main-content > section.market-value.text-center.p-t-5 > div > div > div > div.value-range.justify-content-between.m-b-5.p-b-5.d-none.d-sm-flex > div > span',
+
+    eBay: {
+        condition: '#mainContent > div > div.vim.x-item-condition.mar-t-20 > div.x-item-condition-text > div > span > span:nth-child(1) > span',
+        price: '#mainContent > div > div.vim.x-price-section.mar-t-20 > div > div > div.x-price-primary > span',
+        reference: '#viTabs_0_is > div > div.ux-layout-section-evo.ux-layout-section--features > div > div:nth-child(12) > div:nth-child(2) > dl > dd > div > div > span',
+        withOriginalPackaging: '#viTabs_0_is > div > div.ux-layout-section-evo.ux-layout-section--features > div > div:nth-child(3) > div:nth-child(2) > dl > dd > div > div > span',
+        withPapers: '#viTabs_0_is > div > div.ux-layout-section-evo.ux-layout-section--features > div > div:nth-child(3) > div:nth-child(1) > dl > dd > div > div > span'
+    }
+}
+
+async function lookupChrono24(watchData: WatchData): Promise<WatchValuation> {
+    const options: chrome.Options = new chrome.Options();
+    const service: DriverService = new chrome.ServiceBuilder('/Users/ryan/Desktop/Arbitrage App/server/src/chromedriver-mac-arm64/chromedriver').build();
+    const driver: chrome.Driver = await chrome.Driver.createSession(options, service);
+
+    // Magic here ✨
+    await driver.get(CHRONO24_URL);
+    await driver.wait(Selenium.until.elementLocated(Selenium.By.css(SELECTORS.allowCookiesDialog)));
+    await driver.executeScript(`document.querySelector('${SELECTORS.allowCookiesDialog}').remove()`);
+
+    const productSearchField: Selenium.WebElement = await driver.findElement(Selenium.By.css(SELECTORS.productSearchField));
+    await productSearchField.sendKeys(watchData.reference);
+
+    await driver.wait(Selenium.until.elementLocated(Selenium.By.css(SELECTORS.firstProductSearchResult)))
+    const firstProductSearchResult: Selenium.WebElement = await driver.findElement(Selenium.By.css(SELECTORS.firstProductSearchResult));
+    await firstProductSearchResult.click();
+
+    const conditionSelectionIndex: number = watchData.condition === WatchCondition.PRE_OWNED ? 2 : 1
+    await driver.executeScript(`document.querySelector('${SELECTORS.conditionDropdown}').selectedIndex = ${conditionSelectionIndex}`);
+
+    let scopeOfDeliverySelectionIndex: number = 1;
+    if (watchData.withOriginalPackaging && watchData.withPapers) {
+        scopeOfDeliverySelectionIndex = 4;
+    } else if (watchData.withOriginalPackaging) {
+        scopeOfDeliverySelectionIndex = 2;
+    } else if (watchData.withPapers) {
+        scopeOfDeliverySelectionIndex = 3;
+    }
+    await driver.executeScript(`document.querySelector('${SELECTORS.scopeOfDeliveryDropdown}').selectedIndex = ${scopeOfDeliverySelectionIndex}`);
+
+    const calculateStatsButton: Selenium.WebElement = await driver.findElement(Selenium.By.css(SELECTORS.calculateStatsButton));
+    await calculateStatsButton.click();
+
+    await driver.wait(Selenium.until.elementLocated(Selenium.By.css(SELECTORS.allowCookiesDialog)));
+    await driver.executeScript(`document.querySelector('${SELECTORS.allowCookiesDialog}').remove()`);
+
+    const valueRangeSpans: Array<Selenium.WebElement> = await driver.findElements(Selenium.By.css(SELECTORS.valueRangeSpans));
+    const values: number[] = await Promise.all(
+        valueRangeSpans.map(async span => Number.parseInt((await span.getText()).slice(1)))
+    );
+    if (values.length !== 3) throw new Error('Expected exactly 3 values for WatchValuation');
+
+    await driver.quit();
+
+    return values as WatchValuation;
+}
+
+async function lookupeBay(itemId: number): Promise<WatchData> {
+    const response = await fetch(`https://www.ebay.com/itm/${itemId}`);
+    const dom: JSDOM = new JSDOM(await response.text());
+    const document: Document = dom.window.document;
+
+    const conditionElement: Element | null = document.querySelector(SELECTORS.eBay.condition);
+    let condition: WatchCondition;
+    if (conditionElement) {
+        switch (conditionElement.textContent) {
+            case 'New with tags':
+                condition = WatchCondition.NEW_WITH_TAGS;
+                break;
+            default:
+                throw new Error('eBay WatchCondition not recognized');
+        }
+    } else {
+        throw new Error('Could not parse eBay condition element');
+    }
+
+    const priceElement: Element | null = document.querySelector(SELECTORS.eBay.price);
+    let price: number;
+    if (priceElement && priceElement.textContent) {
+        price = Number.parseInt(priceElement.textContent.slice(4));
+    } else {
+        throw new Error('Could not parse eBay price element');
+    }
+
+    const referenceElement: Element | null = document.querySelector(SELECTORS.eBay.reference);
+    let reference: string;
+    if (referenceElement && referenceElement.textContent) {
+        reference = referenceElement.textContent;
+    } else {
+        throw new Error('Could not parse eBay reference element');
+    }
+    
+    const withOriginalPackingElement: Element | null = document.querySelector(SELECTORS.eBay.withOriginalPackaging);
+    let withOriginalPackaging: boolean;
+    if (withOriginalPackingElement && withOriginalPackingElement.textContent) {
+        withOriginalPackaging = withOriginalPackingElement.textContent === 'Yes';
+    } else {
+        throw new Error('Could not parse eBay withOriginalPacking element');
+    }
+
+    const withPapersElement: Element | null = document.querySelector(SELECTORS.eBay.withPapers);
+    let withPapers: boolean;
+    if (withPapersElement && withPapersElement.textContent) {
+        withPapers = withPapersElement.textContent === 'Yes';
+    } else {
+        throw new Error('Could not parse eBay withPapers element');
+    }
+
+    return {
+        condition: condition,
+        price: price,
+        reference: reference,
+        withOriginalPackaging: withOriginalPackaging,
+        withPapers: withPapers
+    }
+}
+
+// const sampleData: WatchData = {
+//     condition: WatchCondition.NEW_WITH_TAGS,
+//     price: 108.89,
+//     reference: 'SNXS77K1',
+//     withOriginalPackaging: true,
+//     withPapers: true
+// }
+
+lookupeBay(186451664803).then((watchData: WatchData) => {
+    lookupChrono24(watchData).then((valuation: WatchValuation) => {
+        console.log(valuation)
+    }).catch(console.error);
+}).catch(console.error);
