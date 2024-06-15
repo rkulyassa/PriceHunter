@@ -28,10 +28,10 @@ const SELECTORS = {
 
 async function lookupChrono24(watchData: WatchData): Promise<WatchValuation> {
     const options: chrome.Options = new chrome.Options();
+    options.addArguments('--headless');
     const service: DriverService = new chrome.ServiceBuilder(DRIVER_PATH).build();
     const driver: chrome.Driver = await chrome.Driver.createSession(options, service);
 
-    // Magic here ✨
     await driver.get(CHRONO24_URL);
     await driver.wait(Selenium.until.elementLocated(Selenium.By.css(SELECTORS.chrono24.allowCookiesDialog)));
     await driver.executeScript(`document.querySelector('${SELECTORS.chrono24.allowCookiesDialog}').remove()`);
