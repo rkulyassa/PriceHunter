@@ -1,16 +1,23 @@
-export interface WatchData {
-    condition: WatchCondition;
+export interface Data {
+    condition: Condition;
     price: number;
     reference: string;
     withOriginalPackaging: boolean;
     withPapers: boolean;
 }
 
-export const enum WatchCondition {
+export const enum Condition {
     NEW_WITH_TAGS,
     NEW_WITHOUT_TAGS,
     NEW_WITH_DEFECTS,
     PRE_OWNED
 }
 
-export type WatchValuation = [min: number, average: number, max: number];
+export const enum DeliveryScope {
+    WATCH_ONLY,
+    WATCH_WITH_ORIGINAL_PAPERS,
+    WATCH_WITH_ORIGINAL_BOX,
+    WATCH_WITH_ORIGINAL_BOX_AND_PAPERS
+}
+
+export type Valuation = [min: number, average: number, max: number];
