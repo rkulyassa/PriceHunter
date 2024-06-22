@@ -3,10 +3,6 @@ import * as chrome from 'selenium-webdriver/chrome';
 import { DriverService } from 'selenium-webdriver/remote';
 import { JSDOM } from 'jsdom';
 import { WatchData, WatchCondition, WatchValuation } from './models/Watch.model';
-import express from 'express';
-
-const PORT: number = 9000;
-const app: express.Application = express();
 
 const CHRONO24_URL = 'https://www.chrono24.com/info/valuation.htm';
 const DRIVER_PATH = __dirname + '/drivers/chromedriver';
@@ -21,7 +17,7 @@ const SELECTORS = {
         calculateStatsButton: '//*[@id="calculateStats"]',
         valueRangeContainer: '//*[@id="main-content"]/section[1]/div/div/div/div[3]'
     },
-    eBay: {
+    ebay: {
         condition: '//*[@class="x-item-condition-text"]/div/span/span[1]',
         conditionDetailed: '//*[text()[contains(.,"Condition")]]/ancestor::dl/dd',
         price: '//*[@class="x-price-primary"]',
@@ -31,7 +27,7 @@ const SELECTORS = {
     }
 }
 
-async function lookupChrono24(watchData: WatchData): Promise<WatchValuation> {
+export async function lookupChrono24(watchData: WatchData): Promise<WatchValuation> {
     const options: chrome.Options = new chrome.Options();
     options.addArguments('--headless');
     const service: DriverService = new chrome.ServiceBuilder(DRIVER_PATH).build();
@@ -77,12 +73,12 @@ async function lookupChrono24(watchData: WatchData): Promise<WatchValuation> {
     return values as WatchValuation;
 }
 
-async function lookupeBay(itemId: number): Promise<WatchData> {
+export async function lookupEbay(itemId: number): Promise<WatchData> {
     const response = await fetch(`https://www.ebay.com/itm/${itemId}`);
     const dom: JSDOM = new JSDOM(await response.text());
     const document: Document = dom.window.document;
 
-    const conditionElement: Node | null = document.evaluate(SELECTORS.eBay.condition, document, null, dom.window.XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+    const conditionElement: Node | null = document.evaluate(SELECTORS.ebay.condition, document, null, dom.window.XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
     let condition: WatchCondition;
     if (conditionElement) {
         switch (conditionElement.textContent) {
@@ -93,42 +89,42 @@ async function lookupeBay(itemId: number): Promise<WatchData> {
                 condition = WatchCondition.NEW_WITHOUT_TAGS;
                 break;
             default:
-                throw new Error('eBay WatchCondition not recognized');
+                throw new Error('Ebay WatchCondition not recognized');
         }
     } else {
-        throw new Error('Could not parse eBay condition element');
+        throw new Error('Could not parse ebay condition element');
     }
 
-    const priceElement: Node | null = document.evaluate(SELECTORS.eBay.price, document, null, 9, null).singleNodeValue;
+    const priceElement: Node | null = document.evaluate(SELECTORS.ebay.price, document, null, 9, null).singleNodeValue;
     let price: number;
     if (priceElement && priceElement.textContent) {
         price = Number.parseFloat(priceElement.textContent.slice(4));
     } else {
-        throw new Error('Could not parse eBay price element');
+        throw new Error('Could not parse ebay price element');
     }
 
-    const referenceElement: Node | null = document.evaluate(SELECTORS.eBay.reference, document, null, 9, null).singleNodeValue;
+    const referenceElement: Node | null = document.evaluate(SELECTORS.ebay.reference, document, null, 9, null).singleNodeValue;
     let reference: string;
     if (referenceElement && referenceElement.textContent) {
         reference = referenceElement.textContent;
     } else {
-        throw new Error('Could not parse eBay reference element');
+        throw new Error('Could not parse ebay reference element');
     }
     
-    const withOriginalPackagingElement: Node | null = document.evaluate(SELECTORS.eBay.withOriginalPackaging, document, null, 9, null).singleNodeValue;
+    const withOriginalPackagingElement: Node | null = document.evaluate(SELECTORS.ebay.withOriginalPackaging, document, null, 9, null).singleNodeValue;
     let withOriginalPackaging: boolean;
     if (withOriginalPackagingElement && withOriginalPackagingElement.textContent) {
         withOriginalPackaging = withOriginalPackagingElement.textContent === 'Yes';
     } else {
-        throw new Error('Could not parse eBay withOriginalPacking element');
+        throw new Error('Could not parse ebay withOriginalPacking element');
     }
 
-    const withPapersElement: Node | null = document.evaluate(SELECTORS.eBay.withPapers, document, null, 9, null).singleNodeValue;
+    const withPapersElement: Node | null = document.evaluate(SELECTORS.ebay.withPapers, document, null, 9, null).singleNodeValue;
     let withPapers: boolean;
     if (withPapersElement && withPapersElement.textContent) {
         withPapers = withPapersElement.textContent === 'Yes';
     } else {
-        throw new Error('Could not parse eBay withPapers element');
+        throw new Error('Could not parse ebay withPapers element');
     }
 
     return {
@@ -139,25 +135,3 @@ async function lookupeBay(itemId: number): Promise<WatchData> {
         withPapers: withPapers
     }
 }
-
-// 186451664803 - Seiko SNXS77K1
-// 264908359756 - Seiko SGF524
-
-// const sampleData: WatchData = {
-//     condition: WatchCondition.NEW_WITH_TAGS,
-//     price: 108.89,
-//     reference: 'SNXS77K1',
-//     withOriginalPackaging: true,
-//     withPapers: true
-// }
-
-// lookupChrono24(sampleData).then((valuation: WatchValuation) => {
-//     console.log(valuation)
-// }).catch(console.error);
-
-// lookupeBay(186451664803).then((watchData: WatchData) => {
-//     console.log(watchData);
-//     lookupChrono24(watchData).then((valuation: WatchValuation) => {
-//         console.log(valuation)
-//     }).catch(console.error);
-// }).catch(console.error);
