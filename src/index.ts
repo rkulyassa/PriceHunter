@@ -59,7 +59,7 @@ app.get('/api/marketplace', async (req: express.Request, res: express.Response, 
         target = req.query.target as Protocol.SupportedMarketplace;
         id = Number.parseInt(req.query.id as string);
     } else {
-        res.status(400).send(`Bad request params`);
+        res.status(400).send();
         return;
     }
 
@@ -72,25 +72,3 @@ app.get('/api/marketplace', async (req: express.Request, res: express.Response, 
 app.listen(PORT, () => {
     console.log(`App listening on port ${PORT}`);
 });
-
-// 186451664803 - Seiko SNXS77K1
-// 264908359756 - Seiko SGF524
-
-// const sampleData: WatchData = {
-//     condition: WatchCondition.NEW_WITH_TAGS,
-//     price: 108.89,
-//     reference: 'SNXS77K1',
-//     withOriginalPackaging: true,
-//     withPapers: true
-// }
-
-// lookupChrono24(sampleData).then((valuation: WatchValuation) => {
-//     console.log(valuation)
-// }).catch(console.error);
-
-// lookupeBay(186451664803).then((watchData: WatchData) => {
-//     console.log(watchData);
-//     lookupChrono24(watchData).then((valuation: WatchValuation) => {
-//         console.log(valuation)
-//     }).catch(console.error);
-// }).catch(console.error);
