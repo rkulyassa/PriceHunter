@@ -19,5 +19,3 @@ export const enum DeliveryScope {
     WATCH_WITH_ORIGINAL_BOX,
     WATCH_WITH_ORIGINAL_BOX_AND_PAPERS
 }
-
-export type Valuation = [min: number, average: number, max: number];

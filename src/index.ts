@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { Scraper} from './scraper';
 import * as Protocol from './models/Protocol.model';
 import * as Watch from './models/Watch.model';
+import * as Valuation from './models/Valuation.model';
 
 const PORT: number = 3000;
 
@@ -21,7 +22,7 @@ app.get('/api/valuation', async (req: express.Request, res: express.Response, ne
     let preOwned: boolean = req.query.preOwned === 'true';
     let deliveryScope: Watch.DeliveryScope = Number.parseInt(req.query.deliveryScope as string);
     if (target === 'chrono24') {
-        const valuation: Watch.Valuation = await Scraper.lookupChrono24(reference, preOwned, deliveryScope);
+        const valuation: Valuation.Range = await Scraper.lookupChrono24(reference, preOwned, deliveryScope);
         res.send(valuation);
     }
 

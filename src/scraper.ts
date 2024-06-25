@@ -3,6 +3,7 @@ import * as chrome from 'selenium-webdriver/chrome';
 import { DriverService } from 'selenium-webdriver/remote';
 import { JSDOM } from 'jsdom';
 import * as Watch from './models/Watch.model';
+import * as Valuation from './models/Valuation.model';
 
 export class Scraper {
     private static driverPath: string = '/Users/ryan/Desktop/PriceHunter/src/drivers/chromedriver';
@@ -29,7 +30,7 @@ export class Scraper {
         }
     }
 
-    static async lookupChrono24(reference: string, preOwned: boolean, deliveryScope: Watch.DeliveryScope): Promise<Watch.Valuation> {
+    static async lookupChrono24(reference: string, preOwned: boolean, deliveryScope: Watch.DeliveryScope): Promise<Valuation.Range> {
         const options: chrome.Options = new chrome.Options();
         options.addArguments('--headless');
         const service: DriverService = new chrome.ServiceBuilder(Scraper.driverPath).build();
@@ -82,7 +83,7 @@ export class Scraper {
     
         await driver.quit();
     
-        return values as Watch.Valuation;
+        return values as Valuation.Range;
     }
 
     static async lookupEbay(itemId: number): Promise<Watch.Data> {

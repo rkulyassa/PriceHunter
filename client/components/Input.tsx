@@ -1,11 +1,8 @@
 import React from 'react';
-import * as Callbacks from '../models/callbacks.model';
+import './Input.css';
+import * as Callbacks from '../models/Callbacks.model';
 
-type InputProps = {
-  onEnter: Callbacks.OnEnter;
-};
-
-const Input: React.FC<InputProps> = ({ onEnter }) => {
+const Input: React.FC<{onEnter: Callbacks.OnEnter}> = ({ onEnter }) => {
   const [input, setInput] = React.useState('');
 
   return (
