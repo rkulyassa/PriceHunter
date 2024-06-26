@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { z } from 'zod';
-import { Scraper} from './scraper';
+import { Scraper} from './services/scraper';
 import * as Protocol from './models/Protocol.model';
 import * as Watch from './models/Watch.model';
 import * as Valuation from './models/Valuation.model';

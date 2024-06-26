@@ -2,8 +2,8 @@ import * as Selenium from 'selenium-webdriver';
 import * as chrome from 'selenium-webdriver/chrome';
 import { DriverService } from 'selenium-webdriver/remote';
 import { JSDOM } from 'jsdom';
-import * as Watch from './models/Watch.model';
-import * as Valuation from './models/Valuation.model';
+import * as Watch from '../models/Watch.model';
+import * as Valuation from '../models/Valuation.model';
 
 export class Scraper {
     private static driverPath: string = '/Users/ryan/Desktop/PriceHunter/src/drivers/chromedriver';
@@ -30,6 +30,13 @@ export class Scraper {
         }
     }
 
+    /**
+     * Get a watch's valuation using Chrono24's free appraisal tool.
+     * @param reference - The reference number of the target watch.
+     * @param preOwned - Whether the watch is new or worn.
+     * @param deliveryScope - Enum describing the inclusion of original packaging and/or papers.
+     * @returns The watch's valuation.
+     */
     static async lookupChrono24(reference: string, preOwned: boolean, deliveryScope: Watch.DeliveryScope): Promise<Valuation.Range> {
         const options: chrome.Options = new chrome.Options();
         options.addArguments('--headless');

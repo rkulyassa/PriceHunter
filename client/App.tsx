@@ -19,9 +19,9 @@ const App: React.FC = () => {
     if (listing) setListings([...listings, listing]);
 
     const valuator: Protocol.SupportedValuator = 'chrono24';
-    const reference = listing.reference;
-    const preOwned = listing.condition === Watch.Condition.PRE_OWNED;
-    let deliveryScope;
+    const reference: string = listing.reference;
+    const preOwned: boolean = listing.condition === Watch.Condition.PRE_OWNED;
+    let deliveryScope: Watch.DeliveryScope;
     if (listing.withOriginalPackaging && listing.withPapers) {
       deliveryScope = Watch.DeliveryScope.WATCH_WITH_ORIGINAL_BOX_AND_PAPERS;
     } else if (listing.withOriginalPackaging) {
